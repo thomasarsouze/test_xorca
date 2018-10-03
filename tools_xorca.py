@@ -2,6 +2,7 @@
 
 import xarray as xr
 import xgcm 
+import matplotlib.pyplot as plt
 
 def complete_dataset(ds):
     grid = xgcm.Grid(ds, periodic=["Y", "X"])
@@ -21,3 +22,21 @@ def complete_dataset(ds):
     ds.coords['wvol'] = ds.tarea * ds.e3w
 
     return ds
+
+def plot_2D_averages(ds):
+    for var in ds.data_vars:
+        ax=ds[var].plot(col='basins',col_wrap=3,sharey=False, figsize=[12,16])
+        for (i,g) in enumerate(ax.axes.flat):
+            g.set_title(ds.basins[i].values)
+            vals = g.get_yticks()
+            g.set_yticklabels(['{:04.2f}'.format(x) for x in vals])
+        plt.savefig(var+'.png')
+        
+def plot_3D_averages(ds):
+    for var in ds.data_vars:
+        ax=ds[var].plot(col='basins',col_wrap=3,sharey=False, figsize=[12,16])
+        for (i,g) in enumerate(ax.axes.flat):
+            g.set_title(ds.basins[i].values)
+            vals = g.get_yticks()
+            g.set_yticklabels(['{:04.2f}'.format(x) for x in vals])
+        plt.savefig(var+'.png')

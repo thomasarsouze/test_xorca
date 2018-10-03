@@ -369,6 +369,32 @@ def calculate_transport_sections(ds,sections,depths=[0]):
     return xr.merge(array_all)
 
 
+def average_2D_list(ds,list_vars):
+    """Calculate the area weighted average for each var in list_vars, calling average_2D funcion
+    """
+    masks = [key for key in ds.coords.keys() if key.startswith('tmask')]
+    averages = []
+    for mask in masks:
+        if mask != 'tmask':
+            ds = ds.where(ds[mask],drop=True)    
+        else:
+            ds = ds
+        for var in list_vars:
+            ave = average_2D(ds,var)
+            ave.name=var+'_'+mask+'_2D_ave'
+            averages.append(ave)
+        
+    ds=[]
+    for (i,var) in enumerate(list_vars):
+        vars = [diag for diag in averages if diag.name.startswith(var)]
+        ds.append(xr.concat(vars,dim='basins').rename(var+"_2D_ave"))
+    ds = xr.merge(ds)
+    ds.coords['basins'] = masks
+    ds_yearly_rolling = ds.rolling(t=12, center=True).mean()
+
+    return ds,ds_yearly_rolling
+
+
 def average_2D(ds,var):
     """Calculate the area weighted average of 'var' variable in ds
     Parameters
@@ -386,7 +412,7 @@ def average_2D(ds,var):
     
     if var in ds.variables.keys():
         v = ds[var]
-        dims = orca_variables[var]['dims'][-2:]
+        dims = update_orca_variables[var]['dims'][-2:]
         area = [key for key in v.coords.keys() if key.endswith('area')][0]
         ave = (v * v[area] ).sum(dims) / (v[area]).sum(dims)
         ave = ave.compute()
@@ -394,6 +420,32 @@ def average_2D(ds,var):
         print('Variable '+var+' is not in the dataset. Impossible to do average_2D. Please select another variable')
 
     return ave
+
+def average_3D_list(ds,list_vars,depths=[0]):
+    """Calculate the volume weighted average for each var in list_vars, calling average_3D funcion
+    """
+    masks = [key for key in ds.coords.keys() if key.startswith('tmask')]
+    averages = []
+    for mask in masks:
+        if mask != 'tmask':
+            ds = ds.where(ds[mask],drop=True)    
+        else:
+            ds = ds
+        for var in list_vars:
+            ave = average_2D(ds,var,depths)
+            ave.name=var+'_'+mask+'_3D_ave'
+            averages.append(ave)
+        
+    ds=[]
+    for (i,var) in enumerate(list_vars):
+        vars = [diag for diag in averages if diag.name.startswith(var)]
+        ds.append(xr.concat(vars,dim='basins').rename(var+"_3D_ave"))
+    ds = xr.merge(ds)
+    ds.coords['basins'] = masks
+    ds_yearly_rolling = ds.rolling(t=12, center=True).mean()
+
+    return ds,ds_yearly_rolling
+
 
 def average_3D(ds,var,depths=[0]):
     """Calculate the volume weighted average of 'var' variable in ds
