@@ -369,30 +369,37 @@ def calculate_transport_sections(ds,sections,depths=[0]):
     return xr.merge(array_all)
 
 
-def average_2D_list(ds,list_vars):
-    """Calculate the area weighted average for each var in list_vars, calling average_2D funcion
+def average_2D_list(ds_in,list_vars,outname='_2D_averages.nc'):
     """
-    masks = [key for key in ds.coords.keys() if key.startswith('tmask')]
+    Calculate the area weighted average for each var in list_vars, calling average_2D function
+    """
+    masks = [key for key in ds_in.coords.keys() if key.startswith('tmask')]
     averages = []
     for mask in masks:
         if mask != 'tmask':
-            ds = ds.where(ds[mask],drop=True)    
+            ds = ds_in.where(ds_in[mask],drop=True)
         else:
-            ds = ds
+            ds = ds_in
         for var in list_vars:
             ave = average_2D(ds,var)
             ave.name=var+'_'+mask+'_2D_ave'
             averages.append(ave)
         
-    ds=[]
+    ds_out=[]
     for (i,var) in enumerate(list_vars):
         vars = [diag for diag in averages if diag.name.startswith(var)]
-        ds.append(xr.concat(vars,dim='basins').rename(var+"_2D_ave"))
-    ds = xr.merge(ds)
-    ds.coords['basins'] = masks
-    ds_yearly_rolling = ds.rolling(t=12, center=True).mean()
-
-    return ds,ds_yearly_rolling
+        ds_out.append(xr.concat(vars,dim='basins').rename(var+"_2D_ave"))
+    ds_out = xr.merge(ds_out)
+    ds_out.coords['basins'] = masks
+    ds_out_yearly_rolling = ds_out.rolling(t=12, center=True).mean()
+    dict_name=dict()
+    for var in ds_out_yearly_rolling.var():
+        dict_name[var]=var+'_yearly'
+    ds_out_yearly_rolling.rename(dict_name,inplace=True)
+    ds_out=xr.merge((ds_out,ds_out_yearly_rolling))
+    ds_out.to_netcdf(outname)
+    
+    return ds_out
 
 
 def average_2D(ds,var):
@@ -421,30 +428,36 @@ def average_2D(ds,var):
 
     return ave
 
-def average_3D_list(ds,list_vars,depths=[0]):
-    """Calculate the volume weighted average for each var in list_vars, calling average_3D funcion
+def average_3D_list(ds_in,list_vars,depths=[0],outname='_3D_averages.nc'):
+    """Calculate the volume weighted average for each var in list_vars, calling average_3D function
     """
-    masks = [key for key in ds.coords.keys() if key.startswith('tmask')]
+    masks = [key for key in ds_in.coords.keys() if key.startswith('tmask')]
     averages = []
     for mask in masks:
         if mask != 'tmask':
-            ds = ds.where(ds[mask],drop=True)    
+            ds = ds_in.where(ds_in[mask],drop=True)    
         else:
-            ds = ds
+            ds = ds_in
         for var in list_vars:
             ave = average_2D(ds,var,depths)
             ave.name=var+'_'+mask+'_3D_ave'
             averages.append(ave)
         
-    ds=[]
+    ds_out=[]
     for (i,var) in enumerate(list_vars):
         vars = [diag for diag in averages if diag.name.startswith(var)]
-        ds.append(xr.concat(vars,dim='basins').rename(var+"_3D_ave"))
-    ds = xr.merge(ds)
-    ds.coords['basins'] = masks
-    ds_yearly_rolling = ds.rolling(t=12, center=True).mean()
+        ds_out.append(xr.concat(vars,dim='basins').rename(var+"_3D_ave"))
+    ds_out = xr.merge(ds_out)
+    ds_out.coords['basins'] = masks
+    ds_out_yearly_rolling = ds_out.rolling(t=12, center=True).mean()
+    dict_name=dict()
+    for var in ds_out_yearly_rolling.var():
+        dict_name[var]=var+'_yearly'
+    ds_out_yearly_rolling.rename(dict_name,inplace=True)
+    ds_out=xr.merge((ds_out,ds_out_yearly_rolling))
+    ds_out.to_netcdf(outname)
 
-    return ds,ds_yearly_rolling
+    return ds_out
 
 
 def average_3D(ds,var,depths=[0]):

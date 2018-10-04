@@ -25,7 +25,7 @@ def complete_dataset(ds):
 
 def plot_2D_averages(ds):
     for var in ds.data_vars:
-        ax=ds[var].plot(col='basins',col_wrap=3,sharey=False, figsize=[12,16])
+        ax=ds[var].plot(col='basins',hue='data_type',col_wrap=3,sharey=False, figsize=[18,16],add_legend=False)
         for (i,g) in enumerate(ax.axes.flat):
             g.set_title(ds.basins[i].values)
             vals = g.get_yticks()
@@ -34,7 +34,7 @@ def plot_2D_averages(ds):
         
 def plot_3D_averages(ds):
     for var in ds.data_vars:
-        ax=ds[var].plot(col='basins',col_wrap=3,sharey=False, figsize=[12,16])
+        ax=ds[var].plot(col='basins',hue='data_type',col_wrap=3,sharey=False, figsize=[18,16],add_legend=False)
         for (i,g) in enumerate(ax.axes.flat):
             g.set_title(ds.basins[i].values)
             vals = g.get_yticks()
