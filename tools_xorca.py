@@ -25,18 +25,23 @@ def complete_dataset(ds):
 
 def plot_2D_averages(ds):
     for var in ds.data_vars:
-        ax=ds[var].plot(col='basins',hue='data_type',col_wrap=3,sharey=False, figsize=[18,16],add_legend=False)
-        for (i,g) in enumerate(ax.axes.flat):
-            g.set_title(ds.basins[i].values)
-            vals = g.get_yticks()
-            g.set_yticklabels(['{:04.2f}'.format(x) for x in vals])
-        plt.savefig(var+'.png')
+        if len(ds[var].dims)>3:
+            ax=ds[var].plot(x='t',y='depth_c',row='basins',col='data_type',col_wrap=2, sharex=False, figsize=[24,48])
+            for (i,g) in enumerate(ax.axes.flat):
+                g.set_title(ds.basins[int(i/2)].values)
+        else:
+            ax=ds[var].plot(col='basins',hue='data_type',col_wrap=3,sharey=False, sharex=False, figsize=[12,48], add_legend=False)
+            for (i,g) in enumerate(ax.axes.flat):
+                g.set_title(ds.basins[i].values)
+                vals = g.get_yticks()
+                g.set_yticklabels(['{:04.2f}'.format(x) for x in vals])
+        plt.savefig(exp+'_'+var+'.png')
         
 def plot_3D_averages(ds):
     for var in ds.data_vars:
-        ax=ds[var].plot(col='basins',hue='data_type',col_wrap=3,sharey=False, figsize=[18,16],add_legend=False)
+        ax=ds[var].plot(col='basins',hue='data_type',col_wrap=3,sharey=False, sharex=False, figsize=[12,48], add_legend=False)
         for (i,g) in enumerate(ax.axes.flat):
             g.set_title(ds.basins[i].values)
             vals = g.get_yticks()
             g.set_yticklabels(['{:04.2f}'.format(x) for x in vals])
-        plt.savefig(var+'.png')
+        plt.savefig(exp+'_'+var+'.png')

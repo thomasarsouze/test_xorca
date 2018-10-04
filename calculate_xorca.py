@@ -392,11 +392,8 @@ def average_2D_list(ds_in,list_vars,outname='_2D_averages.nc'):
     ds_out = xr.merge(ds_out)
     ds_out.coords['basins'] = masks
     ds_out_yearly_rolling = ds_out.rolling(t=12, center=True).mean()
-    dict_name=dict()
-    for var in ds_out_yearly_rolling.var():
-        dict_name[var]=var+'_yearly'
-    ds_out_yearly_rolling.rename(dict_name,inplace=True)
-    ds_out=xr.merge((ds_out,ds_out_yearly_rolling))
+    ds_out=xr.concat((ds_out,ds_out_yearly_rolling),dim='data_type')
+    ds_out.coords['data_type'] = ['monthly','yearly_rolling']
     ds_out.to_netcdf(outname)
     
     return ds_out
@@ -439,8 +436,9 @@ def average_3D_list(ds_in,list_vars,depths=[0],outname='_3D_averages.nc'):
         else:
             ds = ds_in
         for var in list_vars:
-            ave = average_2D(ds,var,depths)
-            ave.name=var+'_'+mask+'_3D_ave'
+            print(mask,var,depths)
+            ave = average_3D(ds,var,depths)
+            ave.name = var+'_'+mask
             averages.append(ave)
         
     ds_out=[]
@@ -450,15 +448,11 @@ def average_3D_list(ds_in,list_vars,depths=[0],outname='_3D_averages.nc'):
     ds_out = xr.merge(ds_out)
     ds_out.coords['basins'] = masks
     ds_out_yearly_rolling = ds_out.rolling(t=12, center=True).mean()
-    dict_name=dict()
-    for var in ds_out_yearly_rolling.var():
-        dict_name[var]=var+'_yearly'
-    ds_out_yearly_rolling.rename(dict_name,inplace=True)
-    ds_out=xr.merge((ds_out,ds_out_yearly_rolling))
+    ds_out=xr.concat((ds_out,ds_out_yearly_rolling),dim='data_type')
+    ds_out.coords['data_type'] = ['monthly','yearly_rolling']
     ds_out.to_netcdf(outname)
 
     return ds_out
-
 
 def average_3D(ds,var,depths=[0]):
     """Calculate the volume weighted average of 'var' variable in ds
@@ -481,23 +475,26 @@ def average_3D(ds,var,depths=[0]):
         dims  = update_orca_variables[var]['dims'][-3:]
         depth = [key for key in v.coords.keys() if key.startswith('depth')][0]
         vol   = [key for key in v.coords.keys() if key.endswith('vol')][0]
-        arrays=[]
+        arrays=[]; names_coord=[]
         if len(depths)>2:
             for depth1,depth2 in zip(depths,depths[1:]):
                 condition = ((-v[depth]>depth1) & (-v[depth]<depth2))
                 array = (v * v[vol] ).where(condition,drop=True).sum(dims) / (v[vol]).where(condition,drop=True).sum(dims)
                 array = array.compute()
-                if depth2==10000:
-                    array.name=var+'_'+str(depth1)+'-bottom'
-                else:
-                    array.name=var+'_'+str(depth1)+'-'+str(depth2)
                 arrays.append(array)
+                if depth2==10000:
+                    names_coord.append(str(depth1)+'-bottom')
+                else:
+                    names_coord.append(str(depth1)+'-'+str(depth2))
         #add the computation for the whole column too
         array = (v * v[vol] ).sum(dims) / (v[vol]).sum(dims)
-        array.name = var+'_0-bottom'
         arrays.append(array)
+        names_coord.append('0-bottom')
+        depths.pop()
+        ds_out = xr.concat(arrays,dim='depth_range')
+        ds_out.name = var
+        ds_out.coords['depth_range'] = names_coord
     else:
         print('Variable '+var+' is not in the dataset. Impossible to do average_3D. Please select another variable')
 
-    return xr.merge(arrays) 
-
+    return ds_out
