@@ -3,6 +3,7 @@
 import xarray as xr
 import xgcm 
 import matplotlib.pyplot as plt
+import numpy as np
 
 def complete_dataset(ds):
     grid = xgcm.Grid(ds, periodic=["Y", "X"])
@@ -39,9 +40,5 @@ def plot_2D_averages(ds):
         
 def plot_3D_averages(ds):
     for var in ds.data_vars:
-        ax=ds[var].plot(col='basins',hue='data_type',col_wrap=3,sharey=False, sharex=False, figsize=[12,48], add_legend=False)
-        for (i,g) in enumerate(ax.axes.flat):
-            g.set_title(ds.basins[i].values)
-            vals = g.get_yticks()
-            g.set_yticklabels(['{:04.2f}'.format(x) for x in vals])
+        ax=ds[var].plot(row='basins',col='depth_range',hue='data_type',col_wrap=len(ds.depth_range),sharey=False, sharex=False, figsize=[12,40], add_legend=False)
         plt.savefig(exp+'_'+var+'.png')
